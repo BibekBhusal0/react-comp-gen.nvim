@@ -1,8 +1,12 @@
 local utils = require("react-component-generator.utils")
 
--- Define the default template directory
-local default_template_dir = utils.get_plugin_dir() .. "/templates/"
-local default_file_extension = "tsx"
+-- Define the default Config
+local default_config = {
+	file_extension = "tsx",
+	defult_path = "/src/app/components/",
+	template_dir = utils.get_plugin_dir() .. "/templates/",
+	generate_css_file = true,
+}
 
 -- Generate React component
 local function GenerateComponent(component_name, template_dir, config)
@@ -23,7 +27,7 @@ local function GenerateComponent(component_name, template_dir, config)
 	local current_dir = vim.fn.getcwd()
 
 	-- Set the directory path
-	local dir_path = current_dir .. "/src/app/components/" .. pascal_case_name
+	local dir_path = current_dir .. config.defult_path .. pascal_case_name
 
 	-- Create the component directory
 	if not utils.create_directory(dir_path) then
@@ -31,7 +35,7 @@ local function GenerateComponent(component_name, template_dir, config)
 	end
 
 	-- Determine the file extension
-	file_extension = file_extension ~= "" and file_extension or config.file_extension or default_file_extension
+	file_extension = file_extension ~= "" and file_extension or config.file_extension or default_config.file_extension
 
 	-- Read the index template from the specified template directory
 	local template_file = "index_" .. file_extension .. "_template." .. file_extension
@@ -39,8 +43,8 @@ local function GenerateComponent(component_name, template_dir, config)
 	local index_template = utils.read_file(index_template_path)
 
 	-- If the template content is nil, attempt to read from the default template directory
-	if not index_template and template_dir ~= default_template_dir then
-		index_template_path = default_template_dir .. "/" .. template_file
+	if not index_template and template_dir ~= default_config.template_dir then
+		index_template_path = default_config.template_dir .. "/" .. template_file
 		index_template = utils.read_file(index_template_path)
 	end
 
@@ -58,14 +62,16 @@ local function GenerateComponent(component_name, template_dir, config)
 		return
 	end
 
-	-- Create the styles file
-	local styles_file = dir_path .. "/styles.css"
-	local styles_content = "." .. pascal_case_name .. [[ {
+	if config.generate_css_file then
+		-- Create the styles file
+		local styles_file = dir_path .. "/styles.css"
+		local styles_content = "." .. pascal_case_name .. [[ {
     /* Add your styles here */
 }
 ]]
-	if not utils.write_file(styles_file, styles_content) then
-		return
+		if not utils.write_file(styles_file, styles_content) then
+			return
+		end
 	end
 
 	-- Print success message
@@ -73,7 +79,7 @@ local function GenerateComponent(component_name, template_dir, config)
 end
 
 local function setup(config)
-	config = config or {}
+	config = vim.tbl_extend("force", default_config, config)
 
 	-- Ensure the command is created only once
 	if vim.g.react_component_generator_commands_created then
@@ -83,11 +89,11 @@ local function setup(config)
 	-- Create the user command for generating components
 	vim.api.nvim_create_user_command("CreateComponent", function(opts)
 		-- Set template directory
-		local templates_dir = config.templates_dir and vim.fn.expand(config.templates_dir) or default_template_dir
-		local file_extension = config.file_extension or default_file_extension
+		local templates_dir = config.templates_dir and vim.fn.expand(config.templates_dir)
+			or default_config.template_dir
 
 		-- Call the GenerateComponent function
-		GenerateComponent(opts.args, templates_dir, { file_extension = file_extension })
+		GenerateComponent(opts.args, templates_dir, config)
 
 		-- Check if NeoTree is installed and refresh if it is
 		if pcall(require, "neo-tree.sources.filesystem.commands") then

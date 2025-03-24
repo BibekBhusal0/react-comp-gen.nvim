@@ -48,6 +48,8 @@ Add this to your `init.lua or plugins.lua`
     require("react-component-generator").setup({
       templates_dir = "~/custom-templates-directory", -- Custom templates directory (Optional)
       file_extension = "tsx", -- Preferred file extension (Optional)
+      generate_css_file = true, -- Weather or not to generate css file (Optional) default true 
+      default_path = '/src/app/components/', -- Default path where component will be created this is relative to current directory (optional)
     })
   end,
 }
